@@ -113,7 +113,9 @@ func (srv msgServer) TripCircuitBreaker(ctx context.Context, msg *types.MsgTripC
 			return nil, errorsmod.Wrap(sdkerrors.ErrUnauthorized, "account does not have permission to trip circuit breaker")
 		}
 
-		if err = srv.DisableList.Set(ctx, msgTypeURL); err != nil {
+		// set the url as disabled, and initialize with default types.FilteredUrl which has no bypass addresses set, and no expiration time
+		// todo: should a default list of addresses be set in bypass, and should a default expiration time be set?
+		if err = srv.DisableList.Set(ctx, msgTypeURL, types.FilteredUrl{}); err != nil {
 			return nil, err
 		}
 

@@ -63,8 +63,8 @@ func (qs QueryServer) Accounts(ctx context.Context, req *types.QueryAccountsRequ
 func (qs QueryServer) DisabledList(ctx context.Context, req *types.QueryDisabledListRequest) (*types.DisabledListResponse, error) {
 	// Iterate over disabled list and perform the callback
 	var msgs []string
-	err := qs.keeper.DisableList.Walk(ctx, nil, func(msgUrl string) (bool, error) {
-		msgs = append(msgs, msgUrl)
+	err := qs.keeper.DisableList.Walk(ctx, nil, func(key string, value types.FilteredUrl) (bool, error) {
+		msgs = append(msgs, key)
 		return false, nil
 	})
 	if err != nil {

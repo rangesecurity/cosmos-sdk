@@ -23,8 +23,8 @@ type Keeper struct {
 	Schema collections.Schema
 	// Permissions contains the permissions for each account
 	Permissions collections.Map[[]byte, types.Permissions]
-	// DisableList contains the message URLs that are disabled
-	DisableList collections.KeySet[string]
+	// DisableList contains the message URLs that are disabled, and associated parameters
+	DisableList collections.Map[string, types.FilteredUrl]
 }
 
 // NewKeeper constructs a new Circuit Keeper instance
@@ -48,11 +48,12 @@ func NewKeeper(cdc codec.BinaryCodec, storeService store.KVStoreService, authori
 			collections.BytesKey,
 			codec.CollValue[types.Permissions](cdc),
 		),
-		DisableList: collections.NewKeySet(
+		DisableList: collections.NewMap(
 			sb,
 			types.DisableListPrefix,
 			"disable_list",
 			collections.StringKey,
+			codec.CollValue[types.FilteredUrl](cdc),
 		),
 	}
 
