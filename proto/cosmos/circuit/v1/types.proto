@@ -1,5 +1,6 @@
 syntax = "proto3";
 package cosmos.circuit.v1;
+import "cosmos/circuit/v1/filtered_url.proto";
 
 option go_package = "cosmossdk.io/x/circuit/types";
 
@@ -45,5 +46,5 @@ message GenesisAccountPermissions {
 // GenesisState is the state that must be provided at genesis.
 message GenesisState {
   repeated GenesisAccountPermissions account_permissions = 1;
-  repeated string                    disabled_type_urls  = 2;
+  map<string, FilteredUrl>           disabled_type_urls  = 2;
 }
