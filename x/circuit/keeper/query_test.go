@@ -91,7 +91,7 @@ func TestQueryDisabledList(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, disabledList.DisabledList, 0)
 
-	require.NoError(t, f.keeper.DisableList.Set(f.ctx, f.mockMsgURL))
+	require.NoError(t, f.keeper.DisableList.Set(f.ctx, f.mockMsgURL, types.FilteredUrl{}))
 
 	// test the DisabledList method
 	disabledList, err = qs.DisabledList(f.ctx, &types.QueryDisabledListRequest{})
