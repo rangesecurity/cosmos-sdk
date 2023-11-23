@@ -1,0 +1,14 @@
+syntax = "proto3";
+package cosmos.circuit.v1;
+
+option go_package = "cosmossdk.io/x/circuit/types";
+
+// FilteredUrls are message urls which have had a circuit tripped and
+// are unable to be invoked by most users. FilteredUrls have an optional expiration timestamp
+// associated with the rule that can automatically untrip a circuit
+message FilteredUrl {
+  // addresses which are permitted to bypass tripped circuits
+  repeated string bypass_set = 1;
+  // the unix timestamp at which a tripped circuit for this particular url expires at
+  int64 expires_at = 2;
+}
