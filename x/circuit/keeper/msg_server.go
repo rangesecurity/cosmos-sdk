@@ -89,10 +89,11 @@ func (srv msgServer) TripCircuitBreaker(ctx context.Context, msg *types.MsgTripC
 	if err != nil && !errorsmod.IsOf(err, collections.ErrNotFound) {
 		return nil, err
 	}
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	for _, msgTypeURL := range msg.MsgTypeUrls {
 		// check if the message is in the list of allowed messages
-		isAllowed, err := srv.IsAllowed(ctx, msgTypeURL)
+		isAllowed, err := srv.IsAllowed(ctx, sdkCtx.BlockTime(), msgTypeURL)
 		if err != nil {
 			return nil, err
 		}
@@ -115,7 +116,10 @@ func (srv msgServer) TripCircuitBreaker(ctx context.Context, msg *types.MsgTripC
 
 		// set the url as disabled, and initialize with default types.FilteredUrl which has no bypass addresses set, and no expiration time
 		// todo: should a default list of addresses be set in bypass, and should a default expiration time be set?
-		if err = srv.DisableList.Set(ctx, msgTypeURL, types.FilteredUrl{}); err != nil {
+		if err = srv.DisableList.Set(ctx, msgTypeURL, types.FilteredUrl{
+			BypassSet: []string{},
+			ExpiresAt: 0,
+		}); err != nil {
 			return nil, err
 		}
 
@@ -123,7 +127,6 @@ func (srv msgServer) TripCircuitBreaker(ctx context.Context, msg *types.MsgTripC
 
 	urls := strings.Join(msg.GetMsgTypeUrls(), ",")
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			"trip_circuit_breaker",
@@ -151,10 +154,11 @@ func (srv msgServer) ResetCircuitBreaker(ctx context.Context, msg *types.MsgRese
 	if err != nil && !errorsmod.IsOf(err, collections.ErrNotFound) {
 		return nil, err
 	}
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	for _, msgTypeURL := range msg.MsgTypeUrls {
 		// check if the message is in the list of allowed messages
-		isAllowed, err := srv.IsAllowed(ctx, msgTypeURL)
+		isAllowed, err := srv.IsAllowed(ctx, sdkCtx.BlockTime(), msgTypeURL)
 		if err != nil {
 			return nil, err
 		}
@@ -182,7 +186,6 @@ func (srv msgServer) ResetCircuitBreaker(ctx context.Context, msg *types.MsgRese
 
 	urls := strings.Join(msg.GetMsgTypeUrls(), ",")
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			"reset_circuit_breaker",
