@@ -1036,6 +1036,7 @@ var (
 	md_MsgTripCircuitBreaker               protoreflect.MessageDescriptor
 	fd_MsgTripCircuitBreaker_authority     protoreflect.FieldDescriptor
 	fd_MsgTripCircuitBreaker_msg_type_urls protoreflect.FieldDescriptor
+	fd_MsgTripCircuitBreaker_expires_at    protoreflect.FieldDescriptor
 )
 
 func init() {
@@ -1043,6 +1044,7 @@ func init() {
 	md_MsgTripCircuitBreaker = File_cosmos_circuit_v1_tx_proto.Messages().ByName("MsgTripCircuitBreaker")
 	fd_MsgTripCircuitBreaker_authority = md_MsgTripCircuitBreaker.Fields().ByName("authority")
 	fd_MsgTripCircuitBreaker_msg_type_urls = md_MsgTripCircuitBreaker.Fields().ByName("msg_type_urls")
+	fd_MsgTripCircuitBreaker_expires_at = md_MsgTripCircuitBreaker.Fields().ByName("expires_at")
 }
 
 var _ protoreflect.Message = (*fastReflection_MsgTripCircuitBreaker)(nil)
@@ -1122,6 +1124,12 @@ func (x *fastReflection_MsgTripCircuitBreaker) Range(f func(protoreflect.FieldDe
 			return
 		}
 	}
+	if x.ExpiresAt != int64(0) {
+		value := protoreflect.ValueOfInt64(x.ExpiresAt)
+		if !f(fd_MsgTripCircuitBreaker_expires_at, value) {
+			return
+		}
+	}
 }
 
 // Has reports whether a field is populated.
@@ -1141,6 +1149,8 @@ func (x *fastReflection_MsgTripCircuitBreaker) Has(fd protoreflect.FieldDescript
 		return x.Authority != ""
 	case "cosmos.circuit.v1.MsgTripCircuitBreaker.msg_type_urls":
 		return len(x.MsgTypeUrls) != 0
+	case "cosmos.circuit.v1.MsgTripCircuitBreaker.expires_at":
+		return x.ExpiresAt != int64(0)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.circuit.v1.MsgTripCircuitBreaker"))
@@ -1161,6 +1171,8 @@ func (x *fastReflection_MsgTripCircuitBreaker) Clear(fd protoreflect.FieldDescri
 		x.Authority = ""
 	case "cosmos.circuit.v1.MsgTripCircuitBreaker.msg_type_urls":
 		x.MsgTypeUrls = nil
+	case "cosmos.circuit.v1.MsgTripCircuitBreaker.expires_at":
+		x.ExpiresAt = int64(0)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.circuit.v1.MsgTripCircuitBreaker"))
@@ -1186,6 +1198,9 @@ func (x *fastReflection_MsgTripCircuitBreaker) Get(descriptor protoreflect.Field
 		}
 		listValue := &_MsgTripCircuitBreaker_2_list{list: &x.MsgTypeUrls}
 		return protoreflect.ValueOfList(listValue)
+	case "cosmos.circuit.v1.MsgTripCircuitBreaker.expires_at":
+		value := x.ExpiresAt
+		return protoreflect.ValueOfInt64(value)
 	default:
 		if descriptor.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.circuit.v1.MsgTripCircuitBreaker"))
@@ -1212,6 +1227,8 @@ func (x *fastReflection_MsgTripCircuitBreaker) Set(fd protoreflect.FieldDescript
 		lv := value.List()
 		clv := lv.(*_MsgTripCircuitBreaker_2_list)
 		x.MsgTypeUrls = *clv.list
+	case "cosmos.circuit.v1.MsgTripCircuitBreaker.expires_at":
+		x.ExpiresAt = value.Int()
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.circuit.v1.MsgTripCircuitBreaker"))
@@ -1240,6 +1257,8 @@ func (x *fastReflection_MsgTripCircuitBreaker) Mutable(fd protoreflect.FieldDesc
 		return protoreflect.ValueOfList(value)
 	case "cosmos.circuit.v1.MsgTripCircuitBreaker.authority":
 		panic(fmt.Errorf("field authority of message cosmos.circuit.v1.MsgTripCircuitBreaker is not mutable"))
+	case "cosmos.circuit.v1.MsgTripCircuitBreaker.expires_at":
+		panic(fmt.Errorf("field expires_at of message cosmos.circuit.v1.MsgTripCircuitBreaker is not mutable"))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.circuit.v1.MsgTripCircuitBreaker"))
@@ -1258,6 +1277,8 @@ func (x *fastReflection_MsgTripCircuitBreaker) NewField(fd protoreflect.FieldDes
 	case "cosmos.circuit.v1.MsgTripCircuitBreaker.msg_type_urls":
 		list := []string{}
 		return protoreflect.ValueOfList(&_MsgTripCircuitBreaker_2_list{list: &list})
+	case "cosmos.circuit.v1.MsgTripCircuitBreaker.expires_at":
+		return protoreflect.ValueOfInt64(int64(0))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.circuit.v1.MsgTripCircuitBreaker"))
@@ -1337,6 +1358,9 @@ func (x *fastReflection_MsgTripCircuitBreaker) ProtoMethods() *protoiface.Method
 				n += 1 + l + runtime.Sov(uint64(l))
 			}
 		}
+		if x.ExpiresAt != 0 {
+			n += 1 + runtime.Sov(uint64(x.ExpiresAt))
+		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
 		}
@@ -1365,6 +1389,11 @@ func (x *fastReflection_MsgTripCircuitBreaker) ProtoMethods() *protoiface.Method
 		if x.unknownFields != nil {
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
+		}
+		if x.ExpiresAt != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.ExpiresAt))
+			i--
+			dAtA[i] = 0x18
 		}
 		if len(x.MsgTypeUrls) > 0 {
 			for iNdEx := len(x.MsgTypeUrls) - 1; iNdEx >= 0; iNdEx-- {
@@ -1495,6 +1524,25 @@ func (x *fastReflection_MsgTripCircuitBreaker) ProtoMethods() *protoiface.Method
 				}
 				x.MsgTypeUrls = append(x.MsgTypeUrls, string(dAtA[iNdEx:postIndex]))
 				iNdEx = postIndex
+			case 3:
+				if wireType != 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field ExpiresAt", wireType)
+				}
+				x.ExpiresAt = 0
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					x.ExpiresAt |= int64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
 			default:
 				iNdEx = preIndex
 				skippy, err := runtime.Skip(dAtA[iNdEx:])
@@ -3015,6 +3063,8 @@ type MsgTripCircuitBreaker struct {
 	// authority does not have permissions to trip the specified msg type URLs
 	// (or all URLs), the operation will fail.
 	MsgTypeUrls []string `protobuf:"bytes,2,rep,name=msg_type_urls,json=msgTypeUrls,proto3" json:"msg_type_urls,omitempty"`
+	// / allows caller to specify an expirartion time to associate with the trip circuit
+	ExpiresAt int64 `protobuf:"varint,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
 }
 
 func (x *MsgTripCircuitBreaker) Reset() {
@@ -3049,6 +3099,13 @@ func (x *MsgTripCircuitBreaker) GetMsgTypeUrls() []string {
 		return x.MsgTypeUrls
 	}
 	return nil
+}
+
+func (x *MsgTripCircuitBreaker) GetExpiresAt() int64 {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return 0
 }
 
 // MsgTripCircuitBreakerResponse defines the Msg/TripCircuitBreaker response type.
@@ -3194,13 +3251,15 @@ var file_cosmos_circuit_v1_tx_proto_rawDesc = []byte{
 	0x67, 0x41, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x65, 0x43, 0x69, 0x72, 0x63, 0x75, 0x69,
 	0x74, 0x42, 0x72, 0x65, 0x61, 0x6b, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
 	0x12, 0x18, 0x0a, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x08, 0x52, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x22, 0x69, 0x0a, 0x15, 0x4d, 0x73,
-	0x67, 0x54, 0x72, 0x69, 0x70, 0x43, 0x69, 0x72, 0x63, 0x75, 0x69, 0x74, 0x42, 0x72, 0x65, 0x61,
-	0x6b, 0x65, 0x72, 0x12, 0x1c, 0x0a, 0x09, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x74, 0x79,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x74,
-	0x79, 0x12, 0x22, 0x0a, 0x0d, 0x6d, 0x73, 0x67, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x5f, 0x75, 0x72,
-	0x6c, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0b, 0x6d, 0x73, 0x67, 0x54, 0x79, 0x70,
-	0x65, 0x55, 0x72, 0x6c, 0x73, 0x3a, 0x0e, 0x82, 0xe7, 0xb0, 0x2a, 0x09, 0x61, 0x75, 0x74, 0x68,
+	0x08, 0x52, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x22, 0x88, 0x01, 0x0a, 0x15, 0x4d,
+	0x73, 0x67, 0x54, 0x72, 0x69, 0x70, 0x43, 0x69, 0x72, 0x63, 0x75, 0x69, 0x74, 0x42, 0x72, 0x65,
+	0x61, 0x6b, 0x65, 0x72, 0x12, 0x1c, 0x0a, 0x09, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x74,
+	0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69,
+	0x74, 0x79, 0x12, 0x22, 0x0a, 0x0d, 0x6d, 0x73, 0x67, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x5f, 0x75,
+	0x72, 0x6c, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0b, 0x6d, 0x73, 0x67, 0x54, 0x79,
+	0x70, 0x65, 0x55, 0x72, 0x6c, 0x73, 0x12, 0x1d, 0x0a, 0x0a, 0x65, 0x78, 0x70, 0x69, 0x72, 0x65,
+	0x73, 0x5f, 0x61, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x09, 0x65, 0x78, 0x70, 0x69,
+	0x72, 0x65, 0x73, 0x41, 0x74, 0x3a, 0x0e, 0x82, 0xe7, 0xb0, 0x2a, 0x09, 0x61, 0x75, 0x74, 0x68,
 	0x6f, 0x72, 0x69, 0x74, 0x79, 0x22, 0x39, 0x0a, 0x1d, 0x4d, 0x73, 0x67, 0x54, 0x72, 0x69, 0x70,
 	0x43, 0x69, 0x72, 0x63, 0x75, 0x69, 0x74, 0x42, 0x72, 0x65, 0x61, 0x6b, 0x65, 0x72, 0x52, 0x65,
 	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73,

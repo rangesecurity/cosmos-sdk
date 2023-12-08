@@ -2036,7 +2036,7 @@ type GenesisState struct {
 	unknownFields protoimpl.UnknownFields
 
 	AccountPermissions []*GenesisAccountPermissions `protobuf:"bytes,1,rep,name=account_permissions,json=accountPermissions,proto3" json:"account_permissions,omitempty"`
-	DisabledTypeUrls   map[string]*FilteredUrl      `protobuf:"bytes,2,rep,name=disabled_type_urls,json=disabledTypeUrls,proto3" json:"disabled_type_urls,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"` // repeated string                    disabled_type_urls  = 2;
+	DisabledTypeUrls   map[string]*FilteredUrl      `protobuf:"bytes,2,rep,name=disabled_type_urls,json=disabledTypeUrls,proto3" json:"disabled_type_urls,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *GenesisState) Reset() {
