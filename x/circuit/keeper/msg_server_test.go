@@ -133,8 +133,8 @@ func TestTripCircuitBreaker(t *testing.T) {
 		),
 		lastEvent(ft.ctx),
 	)
-
-	allowed, err := ft.keeper.IsAllowed(ft.ctx, url)
+	sdkCtx := sdk.UnwrapSDKContext(ft.ctx)
+	allowed, err := ft.keeper.IsAllowed(ft.ctx, sdkCtx.BlockTime(), url)
 	require.NoError(t, err)
 	require.False(t, allowed, "circuit breaker should be tripped")
 
@@ -172,7 +172,7 @@ func TestTripCircuitBreaker(t *testing.T) {
 		lastEvent(ft.ctx),
 	)
 
-	allowed, err = ft.keeper.IsAllowed(ft.ctx, url2)
+	allowed, err = ft.keeper.IsAllowed(ft.ctx, sdkCtx.BlockTime(), url2)
 	require.NoError(t, err)
 	require.False(t, allowed, "circuit breaker should be tripped")
 
@@ -213,8 +213,9 @@ func TestResetCircuitBreaker(t *testing.T) {
 	admintrip := &types.MsgTripCircuitBreaker{Authority: authority, MsgTypeUrls: []string{url}}
 	_, err = srv.TripCircuitBreaker(ft.ctx, admintrip)
 	require.NoError(t, err)
+	sdkCtx := sdk.UnwrapSDKContext(ft.ctx)
 
-	allowed, err := ft.keeper.IsAllowed(ft.ctx, url)
+	allowed, err := ft.keeper.IsAllowed(ft.ctx, sdkCtx.BlockTime(), url)
 	require.NoError(t, err)
 	require.False(t, allowed, "circuit breaker should be tripped")
 
@@ -231,7 +232,7 @@ func TestResetCircuitBreaker(t *testing.T) {
 		lastEvent(ft.ctx),
 	)
 
-	allowed, err = ft.keeper.IsAllowed(ft.ctx, url)
+	allowed, err = ft.keeper.IsAllowed(ft.ctx, sdkCtx.BlockTime(), url)
 	require.NoError(t, err)
 	require.True(t, allowed, "circuit breaker should be reset")
 
@@ -239,7 +240,7 @@ func TestResetCircuitBreaker(t *testing.T) {
 	_, err = srv.TripCircuitBreaker(ft.ctx, admintrip)
 	require.NoError(t, err)
 
-	allowed, err = ft.keeper.IsAllowed(ft.ctx, url)
+	allowed, err = ft.keeper.IsAllowed(ft.ctx, sdkCtx.BlockTime(), url)
 	require.NoError(t, err)
 	require.False(t, allowed, "circuit breaker should be tripped")
 
@@ -248,7 +249,7 @@ func TestResetCircuitBreaker(t *testing.T) {
 	_, err = srv.ResetCircuitBreaker(ft.ctx, unknownUserReset)
 	require.Error(t, err)
 
-	allowed, err = ft.keeper.IsAllowed(ft.ctx, url)
+	allowed, err = ft.keeper.IsAllowed(ft.ctx, sdkCtx.BlockTime(), url)
 	require.NoError(t, err)
 	require.False(t, allowed, "circuit breaker should be reset")
 
@@ -344,13 +345,13 @@ func TestResetCircuitBreakerSomeMsgs(t *testing.T) {
 	admintrip := &types.MsgTripCircuitBreaker{Authority: authority, MsgTypeUrls: []string{url, url2}}
 	_, err = srv.TripCircuitBreaker(ft.ctx, admintrip)
 	require.NoError(t, err)
-
+	sdkCtx := sdk.UnwrapSDKContext(ft.ctx)
 	// sanity check, both messages should be tripped
-	allowed, err := ft.keeper.IsAllowed(ft.ctx, url)
+	allowed, err := ft.keeper.IsAllowed(ft.ctx, sdkCtx.BlockTime(), url)
 	require.NoError(t, err)
 	require.False(t, allowed, "circuit breaker should be tripped")
 
-	allowed, err = ft.keeper.IsAllowed(ft.ctx, url2)
+	allowed, err = ft.keeper.IsAllowed(ft.ctx, sdkCtx.BlockTime(), url2)
 	require.NoError(t, err)
 	require.False(t, allowed, "circuit breaker should be tripped")
 
@@ -365,11 +366,11 @@ func TestResetCircuitBreakerSomeMsgs(t *testing.T) {
 	require.NoError(t, err)
 
 	// Only url2 should be reset, url should still be tripped
-	allowed, err = ft.keeper.IsAllowed(ft.ctx, url)
+	allowed, err = ft.keeper.IsAllowed(ft.ctx, sdkCtx.BlockTime(), url)
 	require.NoError(t, err)
 	require.False(t, allowed, "circuit breaker should be tripped")
 
-	allowed, err = ft.keeper.IsAllowed(ft.ctx, url2)
+	allowed, err = ft.keeper.IsAllowed(ft.ctx, sdkCtx.BlockTime(), url2)
 	require.NoError(t, err)
 	require.True(t, allowed, "circuit breaker should be reset")
 }
