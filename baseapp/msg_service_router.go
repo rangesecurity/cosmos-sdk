@@ -105,7 +105,8 @@ func (msr *MsgServiceRouter) registerHybridHandler(sd *grpc.ServiceDesc, method 
 	// decorate the hybrid handler with the circuit breaker
 	circuitBreakerHybridHandler := func(ctx context.Context, req, resp protoiface.MessageV1) error {
 		messageName := codectypes.MsgTypeURL(req)
-		allowed, err := msr.circuitBreaker.IsAllowed(ctx, messageName)
+		sdkContext := ctx.Value(sdk.SdkContextKey).(sdk.Context)
+		allowed, err := msr.circuitBreaker.IsAllowed(ctx, sdkContext.BlockTime(), messageName)
 		if err != nil {
 			return err
 		}
@@ -183,8 +184,9 @@ func (msr *MsgServiceRouter) registerMsgServiceHandler(sd *grpc.ServiceDesc, met
 		}
 
 		if msr.circuitBreaker != nil {
+			blockTime := ctx.BlockTime()
 			msgURL := sdk.MsgTypeURL(msg)
-			isAllowed, err := msr.circuitBreaker.IsAllowed(ctx, msgURL)
+			isAllowed, err := msr.circuitBreaker.IsAllowed(ctx, blockTime, msgURL)
 			if err != nil {
 				return nil, err
 			}

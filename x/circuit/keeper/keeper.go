@@ -2,6 +2,7 @@ package keeper
 
 import (
 	context "context"
+	"time"
 
 	"cosmossdk.io/collections"
 	"cosmossdk.io/core/address"
@@ -71,7 +72,16 @@ func (k *Keeper) GetAuthority() []byte {
 }
 
 // IsAllowed returns true when msg URL is not found in the DisableList for given context, else false.
-func (k *Keeper) IsAllowed(ctx context.Context, msgURL string) (bool, error) {
-	has, err := k.DisableList.Has(ctx, msgURL)
-	return !has, err
+func (k *Keeper) IsAllowed(ctx context.Context, blockTime time.Time, msgURL string) (bool, error) {
+	filteredURL, err := k.DisableList.Get(ctx, msgURL)
+	if err == collections.ErrNotFound {
+		// key not found, so the url is implicitly allowed
+		return true, nil
+	}
+	if filteredURL.ExpiresAt > 0 && blockTime.Unix() >= filteredURL.ExpiresAt {
+		// tripped circuit has expired so remove
+		return true, k.DisableList.Remove(ctx, msgURL)
+	}
+	// TODO: check BypassSet
+	return false, nil
 }
