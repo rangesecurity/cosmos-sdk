@@ -110,6 +110,7 @@ func (srv msgServer) TripCircuitBreaker(ctx context.Context, msg *types.MsgTripC
 			if !hasPermissionForMsg(perms, msgTypeURL) {
 				return nil, errorsmod.Wrapf(sdkerrors.ErrUnauthorized, "account does not have permission to trip circuit breaker for message %s", msgTypeURL)
 			}
+			// TODO: should we prevent PERMISISONS_LEVEL_SOME_MSGS from being able to include bypassers in the bypass set?
 		default:
 			return nil, errorsmod.Wrap(sdkerrors.ErrUnauthorized, "account does not have permission to trip circuit breaker")
 		}
@@ -117,7 +118,7 @@ func (srv msgServer) TripCircuitBreaker(ctx context.Context, msg *types.MsgTripC
 		// set the url as disabled, and initialize with default types.FilteredUrl which has no bypass addresses set, and no expiration time
 		// todo: should a default list of addresses be set in bypass, and should a default expiration time be set?
 		if err = srv.DisableList.Set(ctx, msgTypeURL, types.FilteredUrl{
-			BypassSet: []string{},
+			BypassSet: msg.BypassSet,
 			ExpiresAt: msg.ExpiresAt,
 		}); err != nil {
 			return nil, err
