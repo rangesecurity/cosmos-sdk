@@ -184,8 +184,16 @@ func (msr *MsgServiceRouter) registerMsgServiceHandler(sd *grpc.ServiceDesc, met
 		}
 
 		if msr.circuitBreaker != nil {
-			blockTime := ctx.BlockTime()
 			msgURL := sdk.MsgTypeURL(msg)
+
+			signatureMsg, ok := msg.(sdk.Signature)
+			if !ok {
+				return nil, fmt.Errorf("message %s has no signer", msgURL)
+			}
+			// TODO: provide signer of message to IsAllowed
+			// fmt.Printf("got signature %+v\n", signatureMsg)
+
+			blockTime := ctx.BlockTime()
 			isAllowed, err := msr.circuitBreaker.IsAllowed(ctx, blockTime, msgURL)
 			if err != nil {
 				return nil, err
