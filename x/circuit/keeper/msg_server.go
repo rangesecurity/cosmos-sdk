@@ -118,7 +118,7 @@ func (srv msgServer) TripCircuitBreaker(ctx context.Context, msg *types.MsgTripC
 		// todo: should a default list of addresses be set in bypass, and should a default expiration time be set?
 		if err = srv.DisableList.Set(ctx, msgTypeURL, types.FilteredUrl{
 			BypassSet: []string{},
-			ExpiresAt: 0,
+			ExpiresAt: msg.ExpiresAt,
 		}); err != nil {
 			return nil, err
 		}
