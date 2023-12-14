@@ -89,10 +89,12 @@ func (srv msgServer) TripCircuitBreaker(ctx context.Context, msg *types.MsgTripC
 	if err != nil && !errorsmod.IsOf(err, collections.ErrNotFound) {
 		return nil, err
 	}
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	for _, msgTypeURL := range msg.MsgTypeUrls {
 		// check if the message is in the list of allowed messages
-		isAllowed, err := srv.IsAllowed(ctx, msgTypeURL)
+		// todo: should we extracting message signer and passing it to IsAllowed ?
+		isAllowed, err := srv.IsAllowed(ctx, sdkCtx.BlockTime(), msgTypeURL, [][]byte{})
 		if err != nil {
 			return nil, err
 		}
@@ -109,11 +111,17 @@ func (srv msgServer) TripCircuitBreaker(ctx context.Context, msg *types.MsgTripC
 			if !hasPermissionForMsg(perms, msgTypeURL) {
 				return nil, errorsmod.Wrapf(sdkerrors.ErrUnauthorized, "account does not have permission to trip circuit breaker for message %s", msgTypeURL)
 			}
+			// TODO: should we prevent PERMISISONS_LEVEL_SOME_MSGS from being able to include bypassers in the bypass set?
 		default:
 			return nil, errorsmod.Wrap(sdkerrors.ErrUnauthorized, "account does not have permission to trip circuit breaker")
 		}
 
-		if err = srv.DisableList.Set(ctx, msgTypeURL); err != nil {
+		// set the url as disabled, and initialize with default types.FilteredUrl which has no bypass addresses set, and no expiration time
+		// todo: should a default list of addresses be set in bypass, and should a default expiration time be set?
+		if err = srv.DisableList.Set(ctx, msgTypeURL, types.FilteredUrl{
+			BypassSet: msg.BypassSet,
+			ExpiresAt: msg.ExpiresAt,
+		}); err != nil {
 			return nil, err
 		}
 
@@ -121,7 +129,6 @@ func (srv msgServer) TripCircuitBreaker(ctx context.Context, msg *types.MsgTripC
 
 	urls := strings.Join(msg.GetMsgTypeUrls(), ",")
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			"trip_circuit_breaker",
@@ -149,10 +156,12 @@ func (srv msgServer) ResetCircuitBreaker(ctx context.Context, msg *types.MsgRese
 	if err != nil && !errorsmod.IsOf(err, collections.ErrNotFound) {
 		return nil, err
 	}
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	for _, msgTypeURL := range msg.MsgTypeUrls {
 		// check if the message is in the list of allowed messages
-		isAllowed, err := srv.IsAllowed(ctx, msgTypeURL)
+		// todo: should we extracting message signer and passing it to IsAllowed ?
+		isAllowed, err := srv.IsAllowed(ctx, sdkCtx.BlockTime(), msgTypeURL, [][]byte{})
 		if err != nil {
 			return nil, err
 		}
@@ -180,7 +189,6 @@ func (srv msgServer) ResetCircuitBreaker(ctx context.Context, msg *types.MsgRese
 
 	urls := strings.Join(msg.GetMsgTypeUrls(), ",")
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			"reset_circuit_breaker",

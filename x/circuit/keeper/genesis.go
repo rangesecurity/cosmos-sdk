@@ -9,7 +9,7 @@ import (
 func (k *Keeper) ExportGenesis(ctx context.Context) (data *types.GenesisState) {
 	var (
 		permissions  []*types.GenesisAccountPermissions
-		disabledMsgs []string
+		disabledMsgs map[string]*types.FilteredUrl = make(map[string]*types.FilteredUrl)
 	)
 
 	err := k.Permissions.Walk(ctx, nil, func(address []byte, perm types.Permissions) (stop bool, err error) {
@@ -29,8 +29,8 @@ func (k *Keeper) ExportGenesis(ctx context.Context) (data *types.GenesisState) {
 		panic(err)
 	}
 
-	err = k.DisableList.Walk(ctx, nil, func(msgUrl string) (stop bool, err error) {
-		disabledMsgs = append(disabledMsgs, msgUrl)
+	err = k.DisableList.Walk(ctx, nil, func(key string, value types.FilteredUrl) (stop bool, err error) {
+		disabledMsgs[key] = &value
 		return false, nil
 	})
 	if err != nil {
@@ -56,9 +56,9 @@ func (k *Keeper) InitGenesis(ctx context.Context, genState *types.GenesisState) 
 			panic(err)
 		}
 	}
-	for _, url := range genState.DisabledTypeUrls {
+	for url, value := range genState.DisabledTypeUrls {
 		// Set the disabled type urls
-		if err := k.DisableList.Set(ctx, url); err != nil {
+		if err := k.DisableList.Set(ctx, url, *value); err != nil {
 			panic(err)
 		}
 	}

@@ -105,7 +105,26 @@ func (msr *MsgServiceRouter) registerHybridHandler(sd *grpc.ServiceDesc, method 
 	// decorate the hybrid handler with the circuit breaker
 	circuitBreakerHybridHandler := func(ctx context.Context, req, resp protoiface.MessageV1) error {
 		messageName := codectypes.MsgTypeURL(req)
-		allowed, err := msr.circuitBreaker.IsAllowed(ctx, messageName)
+		sdkContext := ctx.Value(sdk.SdkContextKey).(sdk.Context)
+
+		var signers [][]byte
+		if lmsg, ok := resp.(sdk.LegacyMsg); ok {
+			lmsgSigners := lmsg.GetSigners()
+			for _, lmsgSigner := range lmsgSigners {
+				signers = append(signers, lmsgSigner.Bytes())
+			}
+		} else {
+			signatureMsg, ok := resp.(sdk.Signature)
+			if !ok {
+				return fmt.Errorf("message %s has no signer", messageName)
+			}
+			signers = append(signers, signatureMsg.GetPubKey().Address().Bytes())
+		}
+		// todo: decide on course of action for when no signers are present
+		if len(signers) == 0 {
+			sdkContext.Logger().Error("recovered no signers", "msg.url", messageName)
+		}
+		allowed, err := msr.circuitBreaker.IsAllowed(ctx, sdkContext.BlockTime(), messageName, signers)
 		if err != nil {
 			return err
 		}
@@ -184,9 +203,27 @@ func (msr *MsgServiceRouter) registerMsgServiceHandler(sd *grpc.ServiceDesc, met
 
 		if msr.circuitBreaker != nil {
 			msgURL := sdk.MsgTypeURL(msg)
-			isAllowed, err := msr.circuitBreaker.IsAllowed(ctx, msgURL)
+			var signers [][]byte
+			if lmsg, ok := msg.(sdk.LegacyMsg); ok {
+				lmsgSigners := lmsg.GetSigners()
+				for _, lmsgSigner := range lmsgSigners {
+					signers = append(signers, lmsgSigner.Bytes())
+				}
+			} else {
+				signatureMsg, ok := msg.(sdk.Signature)
+				if !ok {
+					return nil, fmt.Errorf("message %s has no signer", msgURL)
+				}
+				signers = append(signers, signatureMsg.GetPubKey().Address().Bytes())
+			}
+			// todo: decide on course of action for when no signers are present
+			if len(signers) == 0 {
+				ctx.Logger().Error("recovered no signers", "msg.url", msgURL)
+			}
+			blockTime := ctx.BlockTime()
+			isAllowed, err := msr.circuitBreaker.IsAllowed(ctx, blockTime, msgURL, signers)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("circuitBreaker.IsAllowed check failed %s", err)
 			}
 
 			if !isAllowed {

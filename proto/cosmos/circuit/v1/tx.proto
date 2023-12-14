@@ -57,6 +57,13 @@ message MsgTripCircuitBreaker {
   // authority does not have permissions to trip the specified msg type URLs
   // (or all URLs), the operation will fail.
   repeated string msg_type_urls = 2;
+
+  /// allows caller to specify an expirartion time to associate with the trip circuit
+  int64 expires_at = 3;
+
+  /// allows caller to specify an extra set of addresses that can bypass the tripped circuit
+  /// TODO: should this be constrained to users of a certain permission level?
+  repeated string bypass_set = 4;
 }
 
 // MsgTripCircuitBreakerResponse defines the Msg/TripCircuitBreaker response type.

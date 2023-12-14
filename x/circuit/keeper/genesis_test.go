@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 
@@ -70,7 +71,12 @@ func (s *GenesisTestSuite) TestInitExportGenesis() {
 
 	genesisState := &types.GenesisState{
 		AccountPermissions: accounts,
-		DisabledTypeUrls:   []string{url},
+		DisabledTypeUrls: map[string]*types.FilteredUrl{
+			url: &types.FilteredUrl{
+				BypassSet: []string{},
+				ExpiresAt: time.Now().Add(time.Hour).Unix(),
+			},
+		},
 	}
 
 	s.keeper.InitGenesis(s.ctx, genesisState)

@@ -130,13 +130,13 @@ func TestIterateDisabledList(t *testing.T) {
 	}
 
 	for _, url := range mockMsgs {
-		require.NoError(t, f.keeper.DisableList.Set(f.ctx, url))
+		require.NoError(t, f.keeper.DisableList.Set(f.ctx, url, types.FilteredUrl{}))
 	}
 
 	// Define a variable to store the returned disabled URLs
 	var returnedDisabled []string
 
-	err := f.keeper.DisableList.Walk(f.ctx, nil, func(msgUrl string) (bool, error) {
+	err := f.keeper.DisableList.Walk(f.ctx, nil, func(msgUrl string, value types.FilteredUrl) (bool, error) {
 		returnedDisabled = append(returnedDisabled, msgUrl)
 		return false, nil
 	})
@@ -151,7 +151,7 @@ func TestIterateDisabledList(t *testing.T) {
 	require.NoError(t, f.keeper.DisableList.Remove(f.ctx, mockMsgs[0]))
 	returnedDisabled = []string{}
 
-	err = f.keeper.DisableList.Walk(f.ctx, nil, func(msgUrl string) (bool, error) {
+	err = f.keeper.DisableList.Walk(f.ctx, nil, func(msgUrl string, value types.FilteredUrl) (bool, error) {
 		returnedDisabled = append(returnedDisabled, msgUrl)
 		return false, nil
 	})
