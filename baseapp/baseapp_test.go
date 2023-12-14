@@ -21,10 +21,14 @@ import (
 	"cosmossdk.io/store/snapshots"
 	snapshottypes "cosmossdk.io/store/snapshots/types"
 	storetypes "cosmossdk.io/store/types"
+	"cosmossdk.io/x/auth/signing"
 	authtx "cosmossdk.io/x/auth/tx"
 	authtypes "cosmossdk.io/x/auth/types"
 	"cosmossdk.io/x/circuit"
+	circuitante "cosmossdk.io/x/circuit/ante"
 	circuitkeeper "cosmossdk.io/x/circuit/keeper"
+
+	"cosmossdk.io/x/circuit/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	baseapptestutil "github.com/cosmos/cosmos-sdk/baseapp/testutil"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -792,7 +796,7 @@ func TestBaseAppCircuitBreaker(t *testing.T) {
 	suite := NewBaseAppSuite(t, anteOpt)
 	deliverKey := []byte("deliver-key")
 	baseapptestutil.RegisterCounterServer(suite.baseApp.MsgServiceRouter(), CounterServerImpl{t, capKey1, deliverKey})
-
+	circuitante.NewCircuitBreakerDecorator(&k)
 	suite.baseApp.SetCircuitBreaker(&k)
 
 	_, err := suite.baseApp.InitChain(&abci.RequestInitChain{
@@ -812,4 +816,53 @@ func TestBaseAppCircuitBreaker(t *testing.T) {
 	})
 	require.NoError(t, err)
 	t.Logf("response %+v\n", res)
+}
+
+func TestBaseAppCircuitBreaker_MsgBlocked(t *testing.T) {
+	encCfg := moduletestutil.MakeTestEncodingConfig(circuit.AppModuleBasic{})
+	ac := addresscodec.NewBech32Codec("cosmos")
+	storeService := runtime.NewKVStoreService(capKey1)
+	k := circuitkeeper.NewKeeper(encCfg.Codec, storeService, authtypes.NewModuleAddress("gov").String(), ac)
+	anteKey := []byte("ante-key")
+	anteOpt := func(bapp *baseapp.BaseApp) {
+		bapp.SetAnteHandler(anteHandlerTxTest(t, capKey1, anteKey))
+	}
+	suite := NewBaseAppSuite(t, anteOpt)
+	deliverKey := []byte("deliver-key")
+	circuitKeeperServer := circuitkeeper.NewMsgServerImpl(k)
+	baseapptestutil.RegisterCounterServer(suite.baseApp.MsgServiceRouter(), CounterServerImpl{t, capKey1, deliverKey})
+
+	suite.baseApp.SetCircuitBreaker(circuitKeeperServer.(baseapp.CircuitBreaker))
+
+	_, err := suite.baseApp.InitChain(&abci.RequestInitChain{
+		ConsensusParams: &cmtproto.ConsensusParams{},
+	})
+	require.NoError(t, err)
+	//ctx := suite.baseApp.NewContext(true)
+	tx := newTxTripCircuit(t, suite.txConfig, authtypes.NewModuleAddress("gov").String(), "/MsgUrl")
+
+	//txBytes, err := suite.txConfig.TxEncoder()(tx)
+	//require.NoError(t, err)
+	txBytes, err := suite.baseApp.TxEncode(tx)
+	require.NoError(t, err)
+	res, err := suite.baseApp.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height: 1,
+		Txs:    [][]byte{txBytes},
+	})
+	require.NoError(t, err)
+	t.Logf("response %+v\n", res)
+}
+
+func newTxTripCircuit(t *testing.T, cfg client.TxConfig, authority string, url string) signing.Tx {
+	t.Helper()
+	_, _, addr := testdata.KeyTestPubAddr()
+	msgs := make([]sdk.Msg, 0)
+	msgs = append(msgs, &types.MsgTripCircuitBreaker{Authority: addr.String(), MsgTypeUrls: []string{url}})
+
+	builder := cfg.NewTxBuilder()
+	err := builder.SetMsgs(msgs...)
+	require.NoError(t, err)
+	setTxSignature(t, builder, uint64(1))
+
+	return builder.GetTx()
 }

@@ -79,15 +79,16 @@ func (srv msgServer) AuthorizeCircuitBreaker(ctx context.Context, msg *types.Msg
 }
 
 func (srv msgServer) TripCircuitBreaker(ctx context.Context, msg *types.MsgTripCircuitBreaker) (*types.MsgTripCircuitBreakerResponse, error) {
+	fmt.Println("processing circuit trip")
 	address, err := srv.addressCodec.StringToBytes(msg.Authority)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get msg.Authority %s", err)
 	}
 
 	// Check that the account has the permissions
 	perms, err := srv.Permissions.Get(ctx, address)
 	if err != nil && !errorsmod.IsOf(err, collections.ErrNotFound) {
-		return nil, err
+		return nil, fmt.Errorf("failed to query permissions %s", err)
 	}
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
@@ -96,7 +97,7 @@ func (srv msgServer) TripCircuitBreaker(ctx context.Context, msg *types.MsgTripC
 		// todo: should we extracting message signer and passing it to IsAllowed ?
 		isAllowed, err := srv.IsAllowed(ctx, sdkCtx.BlockTime(), msgTypeURL, [][]byte{})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("isAllowed failed %s", err)
 		}
 
 		if !isAllowed {
@@ -117,12 +118,11 @@ func (srv msgServer) TripCircuitBreaker(ctx context.Context, msg *types.MsgTripC
 		}
 
 		// set the url as disabled, and initialize with default types.FilteredUrl which has no bypass addresses set, and no expiration time
-		// todo: should a default list of addresses be set in bypass, and should a default expiration time be set?
 		if err = srv.DisableList.Set(ctx, msgTypeURL, types.FilteredUrl{
 			BypassSet: msg.BypassSet,
 			ExpiresAt: msg.ExpiresAt,
 		}); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to trip circuit %s", err)
 		}
 
 	}

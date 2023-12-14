@@ -235,6 +235,15 @@ func TestTripCircuitBreaker(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, has)
 
+	// retrip the circuit, but include an address in the bypass set
+
+	someTrip = &types.MsgTripCircuitBreaker{
+		Authority:   authority,
+		MsgTypeUrls: []string{url},
+		ExpiresAt:   sdkCtx.BlockTime().Add(time.Minute * 3).Unix(),
+		BypassSet:   []string{addresses[1]},
+	}
+
 }
 
 func TestResetCircuitBreaker(t *testing.T) {

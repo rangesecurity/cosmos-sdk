@@ -3,6 +3,7 @@ package ante_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -30,7 +31,7 @@ type MockCircuitBreaker struct {
 	isAllowed bool
 }
 
-func (m MockCircuitBreaker) IsAllowed(ctx context.Context, typeURL string) (bool, error) {
+func (m MockCircuitBreaker) IsAllowed(ctx context.Context, blockTime time.Time, typeURL string, signers [][]byte) (bool, error) {
 	return typeURL == "/cosmos.circuit.v1.MsgAuthorizeCircuitBreaker", nil
 }
 
