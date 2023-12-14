@@ -782,8 +782,7 @@ func TestLoadVersionPruning(t *testing.T) {
 func TestBaseAppCircuitBreaker(t *testing.T) {
 	encCfg := moduletestutil.MakeTestEncodingConfig(circuit.AppModuleBasic{})
 	ac := addresscodec.NewBech32Codec("cosmos")
-	mockStoreKey := storetypes.NewKVStoreKey("test")
-	storeService := runtime.NewKVStoreService(mockStoreKey)
+	storeService := runtime.NewKVStoreService(capKey1)
 	k := circuitkeeper.NewKeeper(encCfg.Codec, storeService, authtypes.NewModuleAddress("gov").String(), ac)
 
 	anteKey := []byte("ante-key")
