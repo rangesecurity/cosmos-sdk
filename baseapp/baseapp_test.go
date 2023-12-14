@@ -783,10 +783,6 @@ func TestLoadVersionPruning(t *testing.T) {
 }
 
 func TestBaseAppCircuitBreaker(t *testing.T) {
-	encCfg := moduletestutil.MakeTestEncodingConfig(circuit.AppModuleBasic{})
-	ac := addresscodec.NewBech32Codec("cosmos")
-	storeService := runtime.NewKVStoreService(capKey1)
-	k := circuitkeeper.NewKeeper(encCfg.Codec, storeService, authtypes.NewModuleAddress("gov").String(), ac)
 
 	anteKey := []byte("ante-key")
 	anteOpt := func(bapp *baseapp.BaseApp) {
@@ -795,6 +791,13 @@ func TestBaseAppCircuitBreaker(t *testing.T) {
 	suite := NewBaseAppSuite(t, anteOpt)
 	deliverKey := []byte("deliver-key")
 	baseapptestutil.RegisterCounterServer(suite.baseApp.MsgServiceRouter(), CounterServerImpl{t, capKey1, deliverKey})
+	circuitAppModule := circuit.AppModuleBasic{}
+	circuitAppModule.RegisterInterfaces(suite.cdc.InterfaceRegistry())
+	encCfg := moduletestutil.MakeTestEncodingConfig(circuitAppModule)
+	ac := addresscodec.NewBech32Codec("cosmos")
+	storeService := runtime.NewKVStoreService(capKey1)
+	k := circuitkeeper.NewKeeper(encCfg.Codec, storeService, authtypes.NewModuleAddress("gov").String(), ac)
+
 	circuittypes.RegisterInterfaces(suite.cdc.InterfaceRegistry())
 
 	suite.baseApp.SetCircuitBreaker(&k)
@@ -819,10 +822,6 @@ func TestBaseAppCircuitBreaker(t *testing.T) {
 }
 
 func TestBaseAppCircuitBreaker_MsgBlocked(t *testing.T) {
-	encCfg := moduletestutil.MakeTestEncodingConfig(circuit.AppModuleBasic{})
-	ac := addresscodec.NewBech32Codec("cosmos")
-	storeService := runtime.NewKVStoreService(capKey1)
-	k := circuitkeeper.NewKeeper(encCfg.Codec, storeService, authtypes.NewModuleAddress("gov").String(), ac)
 	anteKey := []byte("ante-key")
 	anteOpt := func(bapp *baseapp.BaseApp) {
 		bapp.SetAnteHandler(anteHandlerTxTest(t, capKey1, anteKey))
@@ -830,9 +829,14 @@ func TestBaseAppCircuitBreaker_MsgBlocked(t *testing.T) {
 	suite := NewBaseAppSuite(t, anteOpt)
 	deliverKey := []byte("deliver-key")
 	baseapptestutil.RegisterCounterServer(suite.baseApp.MsgServiceRouter(), CounterServerImpl{t, capKey1, deliverKey})
+	circuitAppModule := circuit.AppModuleBasic{}
+	circuitAppModule.RegisterInterfaces(suite.cdc.InterfaceRegistry())
+	encCfg := moduletestutil.MakeTestEncodingConfig(circuitAppModule)
+	ac := addresscodec.NewBech32Codec("cosmos")
+	storeService := runtime.NewKVStoreService(capKey1)
+	k := circuitkeeper.NewKeeper(encCfg.Codec, storeService, authtypes.NewModuleAddress("gov").String(), ac)
 
 	circuittypes.RegisterInterfaces(suite.cdc.InterfaceRegistry())
-
 	suite.baseApp.SetCircuitBreaker(&k)
 
 	_, err := suite.baseApp.InitChain(&abci.RequestInitChain{
@@ -842,9 +846,7 @@ func TestBaseAppCircuitBreaker_MsgBlocked(t *testing.T) {
 	//ctx := suite.baseApp.NewContext(true)
 	tx := newTxTripCircuit(t, suite.txConfig, authtypes.NewModuleAddress("gov").String(), "/MsgUrl")
 
-	//txBytes, err := suite.txConfig.TxEncoder()(tx)
-	//require.NoError(t, err)
-	txBytes, err := suite.baseApp.TxEncode(tx)
+	txBytes, err := suite.txConfig.TxEncoder()(tx)
 	require.NoError(t, err)
 	res, err := suite.baseApp.FinalizeBlock(&abci.RequestFinalizeBlock{
 		Height: 1,
