@@ -93,7 +93,8 @@ func (srv msgServer) TripCircuitBreaker(ctx context.Context, msg *types.MsgTripC
 
 	for _, msgTypeURL := range msg.MsgTypeUrls {
 		// check if the message is in the list of allowed messages
-		isAllowed, err := srv.IsAllowed(ctx, sdkCtx.BlockTime(), msgTypeURL)
+		// todo: should we extracting message signer and passing it to IsAllowed ?
+		isAllowed, err := srv.IsAllowed(ctx, sdkCtx.BlockTime(), msgTypeURL, [][]byte{})
 		if err != nil {
 			return nil, err
 		}
@@ -159,7 +160,8 @@ func (srv msgServer) ResetCircuitBreaker(ctx context.Context, msg *types.MsgRese
 
 	for _, msgTypeURL := range msg.MsgTypeUrls {
 		// check if the message is in the list of allowed messages
-		isAllowed, err := srv.IsAllowed(ctx, sdkCtx.BlockTime(), msgTypeURL)
+		// todo: should we extracting message signer and passing it to IsAllowed ?
+		isAllowed, err := srv.IsAllowed(ctx, sdkCtx.BlockTime(), msgTypeURL, [][]byte{})
 		if err != nil {
 			return nil, err
 		}

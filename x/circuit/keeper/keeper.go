@@ -73,7 +73,7 @@ func (k *Keeper) GetAuthority() []byte {
 }
 
 // IsAllowed returns true when msg URL is not found in the DisableList for given context, else false.
-func (k *Keeper) IsAllowed(ctx context.Context, blockTime time.Time, msgURL string) (bool, error) {
+func (k *Keeper) IsAllowed(ctx context.Context, blockTime time.Time, msgURL string, signers [][]byte) (bool, error) {
 	filteredURL, err := k.DisableList.Get(ctx, msgURL)
 	if errors.Is(err, collections.ErrNotFound) {
 		// key not found, so the url is implicitly allowed
@@ -81,6 +81,19 @@ func (k *Keeper) IsAllowed(ctx context.Context, blockTime time.Time, msgURL stri
 	} else if err != nil {
 		// unexpected error encountered, return it
 		return false, err
+	}
+	// create a map to store the present signers
+	// avoids having to loop over the bypass set and the signer set
+	var signerMap = make(map[string]struct{}, 0)
+	for _, signer := range signers {
+		signerMap[string(signer)] = struct{}{}
+	}
+	// check to see if any of the signers are present in the bypass set
+	for _, bypasser := range filteredURL.BypassSet {
+		if _, ok := signerMap[bypasser]; ok {
+			// signer present, they can skip the tripped circuit
+			return true, nil
+		}
 	}
 	if filteredURL.ExpiresAt > 0 && blockTime.Unix() >= filteredURL.ExpiresAt {
 		// tripped circuit has expired so remove
