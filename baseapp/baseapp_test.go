@@ -25,10 +25,9 @@ import (
 	authtx "cosmossdk.io/x/auth/tx"
 	authtypes "cosmossdk.io/x/auth/types"
 	"cosmossdk.io/x/circuit"
-	circuitante "cosmossdk.io/x/circuit/ante"
 	circuitkeeper "cosmossdk.io/x/circuit/keeper"
-
 	"cosmossdk.io/x/circuit/types"
+	circuittypes "cosmossdk.io/x/circuit/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	baseapptestutil "github.com/cosmos/cosmos-sdk/baseapp/testutil"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -796,7 +795,8 @@ func TestBaseAppCircuitBreaker(t *testing.T) {
 	suite := NewBaseAppSuite(t, anteOpt)
 	deliverKey := []byte("deliver-key")
 	baseapptestutil.RegisterCounterServer(suite.baseApp.MsgServiceRouter(), CounterServerImpl{t, capKey1, deliverKey})
-	circuitante.NewCircuitBreakerDecorator(&k)
+	circuittypes.RegisterInterfaces(suite.cdc.InterfaceRegistry())
+
 	suite.baseApp.SetCircuitBreaker(&k)
 
 	_, err := suite.baseApp.InitChain(&abci.RequestInitChain{
@@ -829,10 +829,11 @@ func TestBaseAppCircuitBreaker_MsgBlocked(t *testing.T) {
 	}
 	suite := NewBaseAppSuite(t, anteOpt)
 	deliverKey := []byte("deliver-key")
-	circuitKeeperServer := circuitkeeper.NewMsgServerImpl(k)
 	baseapptestutil.RegisterCounterServer(suite.baseApp.MsgServiceRouter(), CounterServerImpl{t, capKey1, deliverKey})
 
-	suite.baseApp.SetCircuitBreaker(circuitKeeperServer.(baseapp.CircuitBreaker))
+	circuittypes.RegisterInterfaces(suite.cdc.InterfaceRegistry())
+
+	suite.baseApp.SetCircuitBreaker(&k)
 
 	_, err := suite.baseApp.InitChain(&abci.RequestInitChain{
 		ConsensusParams: &cmtproto.ConsensusParams{},
