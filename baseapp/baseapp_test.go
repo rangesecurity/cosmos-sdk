@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strings"
 	"testing"
 	"time"
 
@@ -821,31 +822,39 @@ func TestBaseAppCircuitBreaker(t *testing.T) {
 	t.Logf("response %+v\n", res)
 }
 
-func TestBaseAppCircuitBreaker_MsgBlocked(t *testing.T) {
+func TestBaseAppCircuitBreaker_TripCircuit(t *testing.T) {
+
+	// prepare base app suite
+
 	anteKey := []byte("ante-key")
+	deliverKey := []byte("deliver-key")
+	circuitAppModule := circuit.AppModuleBasic{}
+
 	anteOpt := func(bapp *baseapp.BaseApp) {
 		bapp.SetAnteHandler(anteHandlerTxTest(t, capKey1, anteKey))
 	}
+	storeService := runtime.NewKVStoreService(capKey1)
+
 	suite := NewBaseAppSuite(t, anteOpt)
-	deliverKey := []byte("deliver-key")
 	baseapptestutil.RegisterCounterServer(suite.baseApp.MsgServiceRouter(), CounterServerImpl{t, capKey1, deliverKey})
-	circuitAppModule := circuit.AppModuleBasic{}
-	circuitAppModule.RegisterInterfaces(suite.cdc.InterfaceRegistry())
+
+	// prepare circuit module
+
 	encCfg := moduletestutil.MakeTestEncodingConfig(circuitAppModule)
 	ac := addresscodec.NewBech32Codec("cosmos")
-	storeService := runtime.NewKVStoreService(capKey1)
 	k := circuitkeeper.NewKeeper(encCfg.Codec, storeService, authtypes.NewModuleAddress("gov").String(), ac)
-
+	circuitAppModule.RegisterInterfaces(suite.cdc.InterfaceRegistry())
 	circuittypes.RegisterInterfaces(suite.cdc.InterfaceRegistry())
 	suite.baseApp.SetCircuitBreaker(&k)
 
+	// initialize baseapp
 	_, err := suite.baseApp.InitChain(&abci.RequestInitChain{
 		ConsensusParams: &cmtproto.ConsensusParams{},
 	})
 	require.NoError(t, err)
-	//ctx := suite.baseApp.NewContext(true)
-	tx := newTxTripCircuit(t, suite.txConfig, authtypes.NewModuleAddress("gov").String(), "/MsgUrl")
 
+	// create message to trip circuit for /MsgUrl
+	tx := newTxTripCircuit(t, suite.txConfig, authtypes.NewModuleAddress("gov").String(), "/MsgUrl")
 	txBytes, err := suite.txConfig.TxEncoder()(tx)
 	require.NoError(t, err)
 	res, err := suite.baseApp.FinalizeBlock(&abci.RequestFinalizeBlock{
@@ -853,14 +862,15 @@ func TestBaseAppCircuitBreaker_MsgBlocked(t *testing.T) {
 		Txs:    [][]byte{txBytes},
 	})
 	require.NoError(t, err)
-	t.Logf("response %+v\n", res)
+	if strings.Contains(res.String(), "no message handler") {
+		t.Fatal(res.String())
+	}
 }
 
 func newTxTripCircuit(t *testing.T, cfg client.TxConfig, authority string, url string) signing.Tx {
 	t.Helper()
-	_, _, addr := testdata.KeyTestPubAddr()
 	msgs := make([]sdk.Msg, 0)
-	msgs = append(msgs, &types.MsgTripCircuitBreaker{Authority: addr.String(), MsgTypeUrls: []string{url}})
+	msgs = append(msgs, &types.MsgTripCircuitBreaker{Authority: authority, MsgTypeUrls: []string{url}})
 
 	builder := cfg.NewTxBuilder()
 	err := builder.SetMsgs(msgs...)
