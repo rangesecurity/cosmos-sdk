@@ -826,16 +826,12 @@ func TestBaseAppCircuitBreaker_TripCircuit(t *testing.T) {
 
 	// prepare base app suite
 
-	anteKey := []byte("ante-key")
 	deliverKey := []byte("deliver-key")
 	circuitAppModule := circuit.AppModuleBasic{}
 
-	anteOpt := func(bapp *baseapp.BaseApp) {
-		bapp.SetAnteHandler(anteHandlerTxTest(t, capKey1, anteKey))
-	}
 	storeService := runtime.NewKVStoreService(capKey1)
 
-	suite := NewBaseAppSuite(t, anteOpt)
+	suite := NewBaseAppSuite(t)
 	baseapptestutil.RegisterCounterServer(suite.baseApp.MsgServiceRouter(), CounterServerImpl{t, capKey1, deliverKey})
 
 	// prepare circuit module
