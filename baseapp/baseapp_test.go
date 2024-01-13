@@ -800,6 +800,7 @@ func TestBaseAppCircuitBreaker(t *testing.T) {
 	k := circuitkeeper.NewKeeper(encCfg.Codec, storeService, authtypes.NewModuleAddress("gov").String(), ac)
 
 	circuittypes.RegisterInterfaces(suite.cdc.InterfaceRegistry())
+	circuittypes.RegisterMsgServer(suite.baseApp.MsgServiceRouter(), circuitkeeper.NewMsgServerImpl(k))
 
 	suite.baseApp.SetCircuitBreaker(&k)
 
@@ -841,8 +842,9 @@ func TestBaseAppCircuitBreaker_TripCircuit(t *testing.T) {
 	k := circuitkeeper.NewKeeper(encCfg.Codec, storeService, authtypes.NewModuleAddress("gov").String(), ac)
 	circuitAppModule.RegisterInterfaces(suite.cdc.InterfaceRegistry())
 	circuittypes.RegisterInterfaces(suite.cdc.InterfaceRegistry())
-	suite.baseApp.SetCircuitBreaker(&k)
+	circuittypes.RegisterMsgServer(suite.baseApp.MsgServiceRouter(), circuitkeeper.NewMsgServerImpl(k))
 
+	suite.baseApp.SetCircuitBreaker(&k)
 	// initialize baseapp
 	_, err := suite.baseApp.InitChain(&abci.RequestInitChain{
 		ConsensusParams: &cmtproto.ConsensusParams{},
