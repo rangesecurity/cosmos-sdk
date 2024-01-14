@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/runtime/protoiface"
 
 	errorsmod "cosmossdk.io/errors"
+	circuittypes "cosmossdk.io/x/circuit/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp/internal/protocompat"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -203,6 +204,12 @@ func (msr *MsgServiceRouter) registerMsgServiceHandler(sd *grpc.ServiceDesc, met
 
 		if msr.circuitBreaker != nil {
 			msgURL := sdk.MsgTypeURL(msg)
+			ctx.Logger().Info("msr.circuitBreaker", "msg.url", msgURL)
+
+			if lmsg, ok := msg.(*circuittypes.MsgTripCircuitBreaker); ok {
+				ctx.Logger().Info("circuitv1.MsgTripCircuitBreaker", "msg", lmsg)
+			}
+
 			var signers [][]byte
 			if lmsg, ok := msg.(sdk.LegacyMsg); ok {
 				lmsgSigners := lmsg.GetSigners()
@@ -222,6 +229,7 @@ func (msr *MsgServiceRouter) registerMsgServiceHandler(sd *grpc.ServiceDesc, met
 			}
 			blockTime := ctx.BlockTime()
 			isAllowed, err := msr.circuitBreaker.IsAllowed(ctx, blockTime, msgURL, signers)
+			ctx.Logger().Info("circuitBreaker.IsAllowed", "allow", isAllowed, "error", err)
 			if err != nil {
 				return nil, fmt.Errorf("circuitBreaker.IsAllowed check failed %s", err)
 			}
