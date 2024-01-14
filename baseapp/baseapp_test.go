@@ -833,6 +833,8 @@ func TestBaseAppCircuitBreaker_TripCircuit(t *testing.T) {
 	storeService := runtime.NewKVStoreService(capKey1)
 
 	suite := NewBaseAppSuite(t)
+	ctx := suite.baseApp.NewContext(true)
+
 	baseapptestutil.RegisterCounterServer(suite.baseApp.MsgServiceRouter(), CounterServerImpl{t, capKey1, deliverKey})
 
 	// prepare circuit module
@@ -840,19 +842,18 @@ func TestBaseAppCircuitBreaker_TripCircuit(t *testing.T) {
 	encCfg := moduletestutil.MakeTestEncodingConfig(circuitAppModule)
 	ac := addresscodec.NewBech32Codec("cosmos")
 	k := circuitkeeper.NewKeeper(encCfg.Codec, storeService, authtypes.NewModuleAddress("gov").String(), ac)
-	circuitAppModule.RegisterInterfaces(suite.cdc.InterfaceRegistry())
 	circuittypes.RegisterInterfaces(suite.cdc.InterfaceRegistry())
 	circuittypes.RegisterMsgServer(suite.baseApp.MsgServiceRouter(), circuitkeeper.NewMsgServerImpl(k))
-
 	suite.baseApp.SetCircuitBreaker(&k)
+
 	// initialize baseapp
 	_, err := suite.baseApp.InitChain(&abci.RequestInitChain{
 		ConsensusParams: &cmtproto.ConsensusParams{},
 	})
 	require.NoError(t, err)
 
-	// create message to trip circuit for /MsgUrl
-	tx := newTxTripCircuit(t, suite.txConfig, authtypes.NewModuleAddress("gov").String(), "/MsgUrl")
+	// create message to trip circuit for /MsgCounter
+	tx := newTxTripCircuit(t, suite.txConfig, authtypes.NewModuleAddress("gov").String(), "/MsgCounter")
 	txBytes, err := suite.txConfig.TxEncoder()(tx)
 	require.NoError(t, err)
 	res, err := suite.baseApp.FinalizeBlock(&abci.RequestFinalizeBlock{
@@ -863,12 +864,28 @@ func TestBaseAppCircuitBreaker_TripCircuit(t *testing.T) {
 	if strings.Contains(res.String(), "no message handler") {
 		t.Fatal(res.String())
 	}
+	if v, err := k.DisableList.Get(ctx, "/MsgCounter"); err == nil {
+		fmt.Println("disableList ", v)
+	} else {
+		fmt.Println("failed to query disable list", err)
+	}
+
+	txC := newTxCounter(t, suite.txConfig, 0, 0)
+
+	txBytes, err = suite.txConfig.TxEncoder()(txC)
+	require.NoError(t, err)
+
+	_, err = suite.baseApp.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height: 1,
+		Txs:    [][]byte{txBytes},
+	})
+	require.NoError(t, err)
 }
 
 func newTxTripCircuit(t *testing.T, cfg client.TxConfig, authority string, url string) signing.Tx {
 	t.Helper()
 	msgs := make([]sdk.Msg, 0)
-	msgs = append(msgs, &types.MsgTripCircuitBreaker{Authority: authority, MsgTypeUrls: []string{url}})
+	msgs = append(msgs, &types.MsgTripCircuitBreaker{Authority: authority, MsgTypeUrls: []string{url}, ExpiresAt: 0})
 
 	builder := cfg.NewTxBuilder()
 	err := builder.SetMsgs(msgs...)
