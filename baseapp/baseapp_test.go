@@ -841,10 +841,7 @@ func TestBaseAppCircuitBreaker_TripCircuit(t *testing.T) {
 	encCfg := moduletestutil.MakeTestEncodingConfig(circuitAppModule)
 	ac := addresscodec.NewBech32Codec("cosmos")
 	k := circuitkeeper.NewKeeper(encCfg.Codec, storeService, authtypes.NewModuleAddress("gov").String(), ac)
-	circuitModule := circuit.NewAppModule(suite.cdc, k)
-
-	circuitModule.RegisterInterfaces(suite.cdc.InterfaceRegistry())
-	//circuittypes.RegisterInterfaces(suite.cdc.InterfaceRegistry())
+	circuittypes.RegisterInterfaces(suite.cdc.InterfaceRegistry())
 	circuittypes.RegisterMsgServer(suite.baseApp.MsgServiceRouter(), circuitkeeper.NewMsgServerImpl(k))
 
 	// commented out due to uncertainty with logic changes that take place when circuit breaker is set
@@ -866,12 +863,10 @@ func TestBaseAppCircuitBreaker_TripCircuit(t *testing.T) {
 		{"msgCounter-0", "/MsgCounter", 0, nil},
 		{"msgCounter-1", "/MsgCounter", 1234, nil},
 	}
-	sequence := 0
-	height := 0
+	sequence := 1
+	height := 1
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sequence++
-			height++
 			// trip the circuit
 			tx := newTxTripCircuit(t, suite.txConfig, authtypes.NewModuleAddress("gov").String(), tt.url, tt.expiresAt, tt.bypassSet, uint64(sequence))
 			txBytes, err := suite.txConfig.TxEncoder()(tx)
@@ -881,7 +876,10 @@ func TestBaseAppCircuitBreaker_TripCircuit(t *testing.T) {
 				Txs:    [][]byte{txBytes},
 			})
 			require.NoError(t, err)
-			suite.baseApp.Commit()
+			_, err = suite.baseApp.Commit()
+			require.NoError(t, err)
+			sequence++
+			height++
 
 			if v, err := k.DisableList.Get(ctx, tt.url); err == nil {
 				require.Equal(t, tt.expiresAt, v.ExpiresAt)
@@ -890,8 +888,6 @@ func TestBaseAppCircuitBreaker_TripCircuit(t *testing.T) {
 				t.Fatalf("%s should be disabled", tt.url)
 			}
 
-			sequence++
-			height++
 			// reset the circuit
 			tx = newTxResetCircuit(t, suite.txConfig, authtypes.NewModuleAddress("gov").String(), tt.url, uint64(sequence))
 			txBytes, err = suite.txConfig.TxEncoder()(tx)
@@ -901,7 +897,11 @@ func TestBaseAppCircuitBreaker_TripCircuit(t *testing.T) {
 				Txs:    [][]byte{txBytes},
 			})
 			require.NoError(t, err)
-			suite.baseApp.Commit()
+			_, err = suite.baseApp.Commit()
+			require.NoError(t, err)
+			sequence++
+			height++
+
 			if v, err := k.DisableList.Get(ctx, tt.url); err == nil {
 				fmt.Println(v)
 			} else {
