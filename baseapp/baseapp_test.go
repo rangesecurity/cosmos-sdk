@@ -882,15 +882,19 @@ func TestBaseAppCircuitBreaker_TripCircuit(t *testing.T) {
 			height++
 
 			// traverse disable list and check disabled urls
-			var disabledURLs = []types.FilteredUrl{}
+			disabledURLs := []types.FilteredUrl{}
+			disabledKeys := []string{}
 			err = k.DisableList.Walk(ctx, nil, func(key string, msgUrl types.FilteredUrl) (bool, error) {
+				disabledKeys = append(disabledKeys, key)
 				disabledURLs = append(disabledURLs, msgUrl)
 				return false, nil
 			})
 			require.NoError(t, err)
+			require.Equal(t, 1, len(disabledKeys))
 			require.Equal(t, 1, len(disabledURLs))
 			require.Equal(t, tt.expiresAt, disabledURLs[0].ExpiresAt)
 			require.Equal(t, tt.bypassSet, disabledURLs[0].BypassSet)
+			require.Equal(t, tt.url, disabledKeys[0])
 
 			// reset the circuit
 			tx = newTxResetCircuit(t, suite.txConfig, authtypes.NewModuleAddress("gov").String(), tt.url, uint64(sequence))
