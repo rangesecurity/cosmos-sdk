@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -960,7 +961,7 @@ func TestBaseAppCircuitBreaker_TripCircuit(t *testing.T) {
 				Txs:    [][]byte{txBytes},
 			})
 			require.NoError(t, err)
-			t.Log("message ", msg)
+			require.True(t, strings.Contains(msg.String(), "circuit breaker disables execution of this message"))
 			_, err = suite.baseApp.Commit()
 			require.NoError(t, err)
 		})
