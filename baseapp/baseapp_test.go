@@ -910,11 +910,16 @@ func TestBaseAppCircuitBreaker_TripCircuit(t *testing.T) {
 			sequence++
 			height++
 
-			if v, err := k.DisableList.Get(ctx, tt.url); err == nil {
-				fmt.Println(v)
-			} else {
-				fmt.Printf("%+v\n", v)
-			}
+			disabledURLs = []types.FilteredUrl{}
+			disabledKeys = []string{}
+			err = k.DisableList.Walk(ctx, nil, func(key string, msgUrl types.FilteredUrl) (bool, error) {
+				disabledKeys = append(disabledKeys, key)
+				disabledURLs = append(disabledURLs, msgUrl)
+				return false, nil
+			})
+			require.NoError(t, err)
+			require.Equal(t, 0, len(disabledKeys))
+			require.Equal(t, 0, len(disabledURLs))
 		})
 	}
 }
