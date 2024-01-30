@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"testing"
 	"time"
 
@@ -853,6 +854,7 @@ func TestBaseAppCircuitBreaker_TripCircuit(t *testing.T) {
 		ConsensusParams: &cmtproto.ConsensusParams{},
 	})
 	require.NoError(t, err)
+	_, _, testBypassSetAddress := testdata.KeyTestPubAddr()
 
 	tests := []struct {
 		name      string
@@ -861,8 +863,9 @@ func TestBaseAppCircuitBreaker_TripCircuit(t *testing.T) {
 		bypassSet []string
 	}{
 		{"msgCounter-0", "/MsgCounter", 0, nil},
-		{"msgCounter-1", "/MsgCounter", 1234, nil},
+		{"msgCounter-1", "/MsgCounter", 1234, []string{testBypassSetAddress.String()}},
 	}
+
 	sequence := 1
 	height := 1
 	for _, tt := range tests {
@@ -922,6 +925,46 @@ func TestBaseAppCircuitBreaker_TripCircuit(t *testing.T) {
 			require.Equal(t, 0, len(disabledURLs))
 		})
 	}
+
+	tests = []struct {
+		name      string
+		url       string
+		expiresAt int64
+		bypassSet []string
+	}{
+		{"msgCounter-BypassSet", "/MsgCounter", 0, []string{testBypassSetAddress.String()}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			tx := newTxTripCircuit(t, suite.txConfig, authtypes.NewModuleAddress("gov").String(), tt.url, tt.expiresAt, tt.bypassSet, uint64(sequence))
+			txBytes, err := suite.txConfig.TxEncoder()(tx)
+			require.NoError(t, err)
+			_, err = suite.baseApp.FinalizeBlock(&abci.RequestFinalizeBlock{
+				Height: int64(height),
+				Txs:    [][]byte{txBytes},
+			})
+			require.NoError(t, err)
+			_, err = suite.baseApp.Commit()
+			require.NoError(t, err)
+			sequence++
+			height++
+
+			suite.baseApp.SetCircuitBreaker(&k)
+
+			txCounter := newTxCounterWithSigner(t, suite.txConfig, 0, testBypassSetAddress.String(), 0)
+			txBytes, err = suite.txConfig.TxEncoder()(txCounter)
+			require.NoError(t, err)
+			msg, err := suite.baseApp.FinalizeBlock(&abci.RequestFinalizeBlock{
+				Height: int64(height),
+				Txs:    [][]byte{txBytes},
+			})
+			require.NoError(t, err)
+			t.Log("message ", msg)
+			_, err = suite.baseApp.Commit()
+			require.NoError(t, err)
+		})
+	}
 }
 
 func newTxTripCircuit(t *testing.T, cfg client.TxConfig, authority string, url string, expiresAt int64, bypassSet []string, sequence uint64) signing.Tx {
@@ -948,5 +991,22 @@ func newTxResetCircuit(t *testing.T, cfg client.TxConfig, authority string, url 
 	err := builder.SetMsgs(msgs...)
 	require.NoError(t, err)
 	setTxSignature(t, builder, sequence)
+	return builder.GetTx()
+}
+
+func newTxCounterWithSigner(t *testing.T, cfg client.TxConfig, counter int64, signer string, msgCounters ...int64) signing.Tx {
+	t.Helper()
+	msgs := make([]sdk.Msg, 0, len(msgCounters))
+	for _, c := range msgCounters {
+		msg := &baseapptestutil.MsgCounter{Counter: c, FailOnHandler: false, Signer: signer}
+		msgs = append(msgs, msg)
+	}
+
+	builder := cfg.NewTxBuilder()
+	err := builder.SetMsgs(msgs...)
+	require.NoError(t, err)
+	builder.SetMemo("counter=" + strconv.FormatInt(counter, 10) + "&failOnAnte=false")
+	setTxSignature(t, builder, uint64(counter))
+
 	return builder.GetTx()
 }
